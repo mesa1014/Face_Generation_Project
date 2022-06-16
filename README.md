@@ -15,7 +15,7 @@ This dataset is more complex than the number datasets (like MNIST or SVHN) you'v
 
 Since the project's main focus is on building the GANs, we've done *some* of the pre-processing for you. Each of the CelebA images has been cropped to remove parts of the image that don't include a face, then resized down to 64x64x3 NumPy images. Some sample data is show below.
 
-<img src='assets/processed_face_data.png' width=60% />
+<img src='notebook_images/processed_face_data.png' width=60% />
 
 > If you are working locally, you can download this data [by clicking here](https://s3.amazonaws.com/video.udacity-data.com/topher/2018/November/5be7eb6f_processed-celeba-small/processed-celeba-small.zip)
 
@@ -80,20 +80,20 @@ def get_dataloader(batch_size, image_size, data_dir='processed_celeba_small/'):
     :param data_dir: Directory where image data is located
     :return: DataLoader with batched data
     """
-    
+
     # TODO: Implement function and return a dataloader
     # Tensor transform
-    transform = transforms.Compose([transforms.Resize(image_size), 
+    transform = transforms.Compose([transforms.Resize(image_size),
                                     transforms.ToTensor()])
 
     # datasets
     dataset = datasets.ImageFolder(data_dir, transform)
 
 
-    # build DataLoaders 
+    # build DataLoaders
     data_loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True)
 
-    
+
     return data_loader
 
 ```
@@ -102,7 +102,7 @@ def get_dataloader(batch_size, image_size, data_dir='processed_celeba_small/'):
 
 #### Exercise: Create a DataLoader `celeba_train_loader` with appropriate hyperparameters.
 
-Call the above function and create a dataloader to view images. 
+Call the above function and create a dataloader to view images.
 * You can decide on any reasonable `batch_size` parameter
 * Your `image_size` **must be** `32`. Resizing the data to a smaller size will make for faster training, while still creating convincing images of faces!
 
@@ -147,7 +147,7 @@ for idx in np.arange(plot_size):
 ```
 
 
-![png](output_9_0.png)
+![png](/notebook_images/output_9_0.png)
 
 
 #### Exercise: Pre-process your image data and scale it to a pixel range of -1 to 1
@@ -159,13 +159,13 @@ You need to do a bit of pre-processing; you know that the output of a `tanh` act
 # TODO: Complete the scale function
 def scale(x, feature_range=(-1, 1)):
     ''' Scale takes in an image x and returns that image, scaled
-       with a feature_range of pixel values from -1 to 1. 
+       with a feature_range of pixel values from -1 to 1.
        This function assumes that the input x is already scaled from 0-1.'''
     # assume x is scaled to (0, 1)
     # scale to feature_range and return scaled x
     min, max = feature_range
     x = x * (max - min) + min
-    
+
     return x
 
 ```
@@ -215,16 +215,16 @@ def conv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_norm
     """Creates a convolutional layer, with optional batch normalization.
     """
     layers = []
-    conv_layer = nn.Conv2d(in_channels, out_channels, 
+    conv_layer = nn.Conv2d(in_channels, out_channels,
                            kernel_size, stride, padding, bias=False)
-    
+
     # append conv layer
     layers.append(conv_layer)
 
     if batch_norm:
         # append batchnorm layer
         layers.append(nn.BatchNorm2d(out_channels))
-     
+
     # using Sequential container
     return nn.Sequential(*layers)
 
@@ -244,10 +244,10 @@ class Discriminator(nn.Module):
         self.conv1 = conv(3, conv_dim, 4, batch_norm=False) # first layer, no batch_norm
         self.conv2 = conv(conv_dim, conv_dim*2, 4)
         self.conv3 = conv(conv_dim*2, conv_dim*4, 4)
-        
+
         # final, fully-connected layer
         self.fc = nn.Linear(conv_dim*4*4*4, 1)
-        
+
 
     def forward(self, x):
         """
@@ -259,13 +259,13 @@ class Discriminator(nn.Module):
         x = F.leaky_relu(self.conv1(x), 0.2)
         x = F.leaky_relu(self.conv2(x), 0.2)
         x = F.leaky_relu(self.conv3(x), 0.2)
-        
+
         # flatten
         x = x.view(-1, self.conv_dim*4*4*4)
-        
+
         # final output layer
         x = self.fc(x)  
-        
+
         return x
 
 
@@ -294,19 +294,19 @@ def deconv(in_channels, out_channels, kernel_size, stride=2, padding=1, batch_no
     """
     # create a sequence of transpose + optional batch norm layers
     layers = []
-    transpose_conv_layer = nn.ConvTranspose2d(in_channels, out_channels, 
+    transpose_conv_layer = nn.ConvTranspose2d(in_channels, out_channels,
                                               kernel_size, stride, padding, bias=False)
     # append transpose convolutional layer
     layers.append(transpose_conv_layer)
-    
+
     if batch_norm:
         # append batchnorm layer
         layers.append(nn.BatchNorm2d(out_channels))
-        
+
     return nn.Sequential(*layers)
 
 class Generator(nn.Module):
-    
+
     def __init__(self, z_size, conv_dim):
         """
         Initialize the Generator Module
@@ -317,7 +317,7 @@ class Generator(nn.Module):
 
         # complete init function
         self.conv_dim = conv_dim
-        
+
         # first, fully-connected layer
         self.fc = nn.Linear(z_size, conv_dim*4*4*4)
 
@@ -325,7 +325,7 @@ class Generator(nn.Module):
         self.t_conv1 = deconv(conv_dim*4, conv_dim*2, 4)
         self.t_conv2 = deconv(conv_dim*2, conv_dim, 4)
         self.t_conv3 = deconv(conv_dim, 3, 4, batch_norm=False)
-        
+
 
     def forward(self, x):
         """
@@ -336,15 +336,15 @@ class Generator(nn.Module):
         # define feedforward behavior
         x = self.fc(x)
         x = x.view(-1, self.conv_dim*4, 4, 4) # (batch_size, depth, 4, 4)
-        
+
         # hidden transpose conv layers + relu
         x = F.relu(self.t_conv1(x))
         x = F.relu(self.t_conv2(x))
-        
+
         # last layer + tanh activation
         x = self.t_conv3(x)
         x = F.tanh(x)
-        
+
         return x
 
 """
@@ -376,21 +376,21 @@ You can refer back to the lesson on weight initialization or even consult existi
 def weights_init_normal(m):
     """
     Applies initial weights to certain layers in a model .
-    The weights are taken from a normal distribution 
+    The weights are taken from a normal distribution
     with mean = 0, std dev = 0.02.
     :param m: A module or layer in a network    
     """
     # classname will be something like:
     # `Conv`, `BatchNorm2d`, `Linear`, etc.
     classname = m.__class__.__name__
-    
+
     # TODO: Apply initial weights to convolutional and linear layers
     if classname.find('Linear') != -1:
         # get the number of the inputs
         m.weight.data.normal_(0, 0.02)
         m.bias.data.fill_(0)
-    
-    
+
+
 ```
 
 ## Build complete network
@@ -414,7 +414,7 @@ def build_network(d_conv_dim, g_conv_dim, z_size):
     print(D)
     print()
     print(G)
-    
+
     return D, G
 
 ```
@@ -448,7 +448,7 @@ D, G = build_network(d_conv_dim, g_conv_dim, z_size)
       )
       (fc): Linear(in_features=2048, out_features=1, bias=True)
     )
-    
+
     Generator(
       (fc): Linear(in_features=100, out_features=2048, bias=True)
       (t_conv1): Sequential(
@@ -467,7 +467,7 @@ D, G = build_network(d_conv_dim, g_conv_dim, z_size)
 
 ### Training on GPU
 
-Check if you can train on GPU. Here, we'll set this as a boolean variable `train_on_gpu`. Later, you'll be responsible for making sure that 
+Check if you can train on GPU. Here, we'll set this as a boolean variable `train_on_gpu`. Later, you'll be responsible for making sure that
 >* Models,
 * Model inputs, and
 * Loss function arguments
@@ -499,7 +499,7 @@ Now we need to calculate the losses for both types of adversarial networks.
 
 ### Discriminator Losses
 
-> * For the discriminator, the total loss is the sum of the losses for real and fake images, `d_loss = d_real_loss + d_fake_loss`. 
+> * For the discriminator, the total loss is the sum of the losses for real and fake images, `d_loss = d_real_loss + d_fake_loss`.
 * Remember that we want the discriminator to output 1 for real images and 0 for fake images, so we need to set up the losses to reflect that.
 
 
@@ -591,7 +591,7 @@ def train(D, G, n_epochs, print_every=50):
        param, n_epochs: number of epochs to train for
        param, print_every: when to print and record the models' losses
        return: D and G losses'''
-    
+
     # move models to GPU
     if train_on_gpu:
         D.cuda()
@@ -622,13 +622,13 @@ def train(D, G, n_epochs, print_every=50):
             # ===============================================
             #         YOUR CODE HERE: TRAIN THE NETWORKS
             # ===============================================
-            
+
             # 1. Train the discriminator on real and fake images
             d_optimizer.zero_grad()
-        
+
             # 1. Train with real images
 
-            # Compute the discriminator losses on real images 
+            # Compute the discriminator losses on real images
             if train_on_gpu:
                 real_images = real_images.cuda()
 
@@ -656,7 +656,7 @@ def train(D, G, n_epochs, print_every=50):
 
             # 2. Train the generator with an adversarial loss
             g_optimizer.zero_grad()
-        
+
             # 1. Train with fake images and flipped labels
 
             # Generate fake images
@@ -666,16 +666,16 @@ def train(D, G, n_epochs, print_every=50):
                 z = z.cuda()
             fake_images = G(z)
 
-            # Compute the discriminator losses on fake images 
+            # Compute the discriminator losses on fake images
             # using flipped labels!
             D_fake = D(fake_images)
             g_loss = real_loss(D_fake) # use real loss to flip labels
 
             # perform backprop
             g_loss.backward()
-            g_optimizer.step() 
+            g_optimizer.step()
 
-            
+
             # ===============================================
             #              END OF YOUR CODE
             # ===============================================
@@ -700,7 +700,7 @@ def train(D, G, n_epochs, print_every=50):
     # Save training generator samples
     with open('train_samples.pkl', 'wb') as f:
         pkl.dump(samples, f)
-    
+
     # finally return losses
     return losses
 ```
@@ -709,7 +709,7 @@ Set your number of training epochs and train your GAN!
 
 
 ```python
-# set number of epochs 
+# set number of epochs
 n_epochs = 25
 
 
@@ -1469,7 +1469,7 @@ plt.legend()
 
 
 
-![png](output_36_1.png)
+![png](/notebook_images/output_36_1.png)
 
 
 ## Generator samples from training
@@ -1503,7 +1503,7 @@ _ = view_samples(-1, samples)
 ```
 
 
-![png](output_40_0.png)
+![png](/notebook_images/output_40_0.png)
 
 
 ### Question: What do you notice about your generated samples and how might you improve this model?
