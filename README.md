@@ -1524,6 +1524,3 @@ Increasing the number of epochs often leads to a more accurate model, but is com
 Our generated images are low resolution. We can generate higher resolution images by training on higher resolution images, but again it is computationally expensive. We also can use larger size images. 
 
 In general, I think our model performed sufficiently. 
-
-### Submitting This Project
-When submitting this project, make sure to run all the cells before saving the notebook. Save the notebook file as "dlnd_face_generation.ipynb" and save it as a HTML file under "File" -> "Download as". Include the "problem_unittests.py" files in your submission.
